@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    image: python:3.10-slim
+    container_name: obsidian-fastapi
+    working_dir: /app
+    volumes:
+      - .:/app
+    # Simulating the deployment of the JWT-secured backend and LangGraph engine
+    command: bash -c "pip install -r requirements.txt && uvicorn backend.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - DB_URI=${DB_URI}
+    networks:
+      - obsidian-network
+    restart: unless-stopped
+
+  control-tower:
+    image: python:3.10-slim
+    container_name: obsidian-streamlit
+    working_dir: /app
+    volumes:
+      - .:/app
+    # Simulating the deployment of the Plotly & XGBoost visualization frontend
+    command: bash -c "pip install -r requirements.txt && streamlit run frontend/app.py --server.port 8501 --server.address 0.0.0.0"
+    ports:
+      - "8501:8501"
+    depends_on:
+      - api-gateway
+    networks:
+      - obsidian-network
+    restart: unless-stopped
+
+networks:
+  obsidian-network:
+    driver: bridge
